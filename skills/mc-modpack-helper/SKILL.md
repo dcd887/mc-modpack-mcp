@@ -36,7 +36,7 @@ description: "Automated diagnostics for Minecraft Fabric/Forge modpacks and mods
 
 ### Phase 1 — 信息收集
 
-1. 探测 `.minecraft` 目录（默认 `Desktop\.minecraft`）
+1. 探测 `.minecraft` 目录（通过 MCP 工具 `get_version_info` 自动查找，或由用户提供）
 2. 读取版本 JSON（`versions/<name>/<name>.json`），提取：
    - `javaVersion.component` + `majorVersion`
    - `arguments.game`（命令行参数）

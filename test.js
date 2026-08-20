@@ -4,7 +4,8 @@ const path = require("node:path");
 const os = require("node:os");
 
 // ── Config ────────────────────────────────────────────────────────────
-const mcDir = "c:\\Users\\kjds\\Desktop\\.minecraft";
+// Use MC_DIR env var, or replace with your own Minecraft directory
+const mcDir = process.env.MC_DIR || path.join(os.homedir(), ".minecraft");
 const mcpPath = path.join(__dirname, "dist", "index.js");
 const logDir = path.join(__dirname, "test_logs");
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
@@ -23,7 +24,7 @@ function log(msg) {
 // ── Backup ────────────────────────────────────────────────────────────
 function createBackup() {
   log("=== 创建备份 ===");
-  const backupPath = path.join(BACKUP_DIR, `rpg_backup_${TIMESTAMP}`);
+  const backupPath = path.join(BACKUP_DIR, `backup_${TIMESTAMP}`);
   if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
   try {
     fs.cpSync(path.join(mcDir, "versions", "rpg"), backupPath, { recursive: true, force: false });
@@ -102,7 +103,7 @@ async function runTest(id, method, params, description) {
       1,
       "tools/call",
       { name: "get_java_versions", arguments: { mc_dir: mcDir } },
-      "读取 PCL Java 版本列表"
+      "读取 Java 版本列表"
     );
 
     // Test 2: get_version_info
@@ -110,7 +111,7 @@ async function runTest(id, method, params, description) {
       2,
       "tools/call",
       { name: "get_version_info", arguments: { mc_dir: mcDir, instance_id: "rpg" } },
-      "读取 RPG 整合包版本信息"
+      "读取整合包版本信息"
     );
 
     // Test 3: detect_conflicts

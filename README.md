@@ -1,6 +1,6 @@
 # mc-modpack-mcp
 
-MCP (Model Context Protocol) server for Minecraft modpack diagnostics on Windows. Designed for modpack authors using PCL (Plain Craft Launcher).
+MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Designed for modpack authors using PCL (Plain Craft Launcher) on Windows, but works on any platform via the `mc_dir` parameter.
 
 ## Features
 
@@ -73,7 +73,7 @@ Add to your MCP client config (e.g., `.mcp.json` or equivalent):
 {
   "name": "get_java_versions",
   "arguments": {
-    "mc_dir": "C:\\Users\\username\\.minecraft"
+    "mc_dir": "{your_minecraft_directory}"
   }
 }
 ```
@@ -84,7 +84,7 @@ Add to your MCP client config (e.g., `.mcp.json` or equivalent):
 {
   "name": "detect_conflicts",
   "arguments": {
-    "mc_dir": "C:\\Users\\username\\.minecraft",
+    "mc_dir": "{your_minecraft_directory}",
     "instance_id": "rpg"
   }
 }
@@ -96,7 +96,7 @@ Add to your MCP client config (e.g., `.mcp.json` or equivalent):
 {
   "name": "read_log",
   "arguments": {
-    "mc_dir": "C:\\Users\\username\\.minecraft",
+    "mc_dir": "{your_minecraft_directory}",
     "instance_id": "rpg",
     "level": "WARN",
     "tail": 50
@@ -151,15 +151,21 @@ See [SKILL.md](./skills/mc-modpack-helper/SKILL.md) for the full skill documenta
 
 ```bash
 npm run build
-node test.js
+MC_DIR=/path/to/your/.minecraft node test.js
+```
+
+Or on Windows (PowerShell):
+
+```powershell
+$env:MC_DIR="C:\path\to\your\.minecraft"; node test.js
 ```
 
 Tests create backups before running and log results to `test_logs/`. See individual test log files for detailed output.
 
 ## Platform Compatibility
 
-- **Primary**: Windows 10/11 with PCL launcher
-- **Secondary**: Any OS with Node.js 18+ (PCL config detection is Windows-specific; other platforms may pass `mc_dir` explicitly)
+- **Windows**: Full support — auto-detects PCL config at `%APPDATA%\PCL\config.json`. Just set `mc_dir` to your `.minecraft` folder.
+- **macOS / Linux**: Supported — PCL auto-detection is Windows-specific. Pass `mc_dir` pointing to your `.minecraft` directory (or any game directory) to use all tools.
 
 ## License
 
