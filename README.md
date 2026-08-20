@@ -1,6 +1,6 @@
 # mc-modpack-mcp
 
-MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Designed for modpack authors using PCL (Plain Craft Launcher) on Windows, but works on any platform via the `mc_dir` parameter.
+MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Supports Fabric/Forge mod conflict detection, log analysis, crash reports, and dependency lookup. `get_java_versions` requires PCL launcher on Windows; all other tools work cross-platform.
 
 ## Features
 
