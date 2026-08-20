@@ -124,6 +124,9 @@ mc-modpack-mcp/
 ├── src/
 │   └── index.ts        # All tool implementations + MCP server setup
 ├── dist/               # Compiled JavaScript (output of tsc)
+├── skills/
+│   └── mc-modpack-helper/
+│       └── SKILL.md    # Trae Work skill for modpack diagnostics
 ├── package.json        # Node.js dependencies (@modelcontextprotocol/sdk, zod)
 ├── tsconfig.json       # TypeScript config (CommonJS output)
 ├── .gitignore
@@ -133,6 +136,16 @@ mc-modpack-mcp/
 ```
 
 The MCP uses the official `@modelcontextprotocol/sdk` v1.x with `McpServer` and `StdioServerTransport`. All tools use `server.tool()` registration pattern compatible with the MCP SDK specification.
+
+## Skills
+
+This repository also includes a Trae Work skill for modpack diagnostics. After cloning, copy the skill to your Trae Work skills directory:
+
+```powershell
+copy skills\mc-modpack-helper\SKILL.md "$env:USERPROFILE\.trae\skills\mc-modpack-helper\SKILL.md"
+```
+
+See [SKILL.md](./skills/mc-modpack-helper/SKILL.md) for the full skill documentation with 8-phase diagnostic workflow.
 
 ## Testing
 
