@@ -30,9 +30,11 @@ MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Designed 
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm
-- A Minecraft instance managed by PCL launcher (Windows)
+- A Minecraft instance (any launcher — macOS/Linux users must pass `mc_dir` explicitly for all tools)
+
+> **Note:** `get_java_versions` reads PCL launcher config and works on Windows only. All other tools are cross-platform.
 
 ### Build
 
