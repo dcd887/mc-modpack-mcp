@@ -37,7 +37,7 @@ function createBackup() {
 }
 
 // ── Run MCP ───────────────────────────────────────────────────────────
-log(`MCP 测试启动 | 时间: ${new Date().toLocaleString("zh-CN")}`);
+log(`MCP test started at ${new Date().toISOString()}`);
 log(`MC 目录: ${mcDir}`);
 log(`日志文件: ${LOG_FILE}`);
 

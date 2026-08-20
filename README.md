@@ -141,8 +141,15 @@ The MCP uses the official `@modelcontextprotocol/sdk` v1.x with `McpServer` and 
 
 This repository also includes a Trae Work skill for modpack diagnostics. After cloning, copy the skill to your Trae Work skills directory:
 
+**Windows (PowerShell):**
 ```powershell
 copy skills\mc-modpack-helper\SKILL.md "$env:USERPROFILE\.trae\skills\mc-modpack-helper\SKILL.md"
+```
+
+**macOS / Linux:**
+```bash
+mkdir -p ~/.trae/skills/mc-modpack-helper
+cp skills/mc-modpack-helper/SKILL.md ~/.trae/skills/mc-modpack-helper/SKILL.md
 ```
 
 See [SKILL.md](./skills/mc-modpack-helper/SKILL.md) for the full skill documentation with 8-phase diagnostic workflow.
