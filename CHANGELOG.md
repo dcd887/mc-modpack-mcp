@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-08-20
+
+### Fixed
+- **Cross-platform fix**: `detectMcDir()` no longer creates invalid paths on macOS/Linux by only using `APPDATA` when it actually exists
+- **README**: Added per-tool platform compatibility table clarifying that `get_java_versions` is Windows/PCL-only while other 8 tools work on all platforms
+- **README**: Updated description to accurately reflect Windows-first, cross-platform scope
+- **README**: Clarified prerequisites — any launcher supported, `mc_dir` must be passed on non-Windows
+
 ## [1.0.1] - 2026-08-20
 
 ### Fixed

@@ -171,8 +171,19 @@ Tests create backups before running and log results to `test_logs/`. See individ
 
 ## Platform Compatibility
 
-- **Windows**: Full support — auto-detects PCL config at `%APPDATA%\PCL\config.json`. Just set `mc_dir` to your `.minecraft` folder.
-- **macOS / Linux**: Supported — PCL auto-detection is Windows-specific. Pass `mc_dir` pointing to your `.minecraft` directory (or any game directory) to use all tools.
+| Tool | Windows | macOS | Linux |
+|------|---------|-------|-------|
+| `get_java_versions` | ✅ Full | ⚠️ PCL-only | ⚠️ PCL-only |
+| `get_version_info` | ✅ | ✅ | ✅ |
+| `list_mods` | ✅ | ✅ | ✅ |
+| `detect_conflicts` | ✅ | ✅ | ✅ |
+| `scan_cleanliness` | ✅ | ✅ | ✅ |
+| `read_log` | ✅ | ✅ | ✅ |
+| `find_crash_reports` | ✅ | ✅ | ✅ |
+| `analyze_crash` | ✅ | ✅ | ✅ |
+| `check_mod_dependencies` | ✅ | ✅ | ✅ |
+
+All tools accept `mc_dir` as an explicit path. `get_java_versions` auto-detects PCL on Windows; on other platforms it returns a clear message when PCL config is absent.
 
 ## License
 

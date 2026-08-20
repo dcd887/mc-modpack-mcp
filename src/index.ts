@@ -333,11 +333,12 @@ server.tool(
 function detectMcDir(): string {
   const { join } = require("node:path");
   const { existsSync } = require("node:fs");
-  const candidates = [
-    join(process.env.USERPROFILE ?? "", ".minecraft"),
-    join(process.env.APPDATA ?? "", ".minecraft"),
-    join(process.cwd(), ".minecraft"),
-  ];
+  const candidates: string[] = [];
+  const profile = process.env.USERPROFILE;
+  if (profile) candidates.push(join(profile, ".minecraft"));
+  // APPDATA is Windows-only; only add it when the env var exists
+  if (process.env.APPDATA) candidates.push(join(process.env.APPDATA, ".minecraft"));
+  candidates.push(join(process.cwd(), ".minecraft"));
   for (const p of candidates) { if (existsSync(p)) return p; }
   return candidates[0] ?? ".minecraft";
 }
