@@ -63,6 +63,52 @@ function humanReadableCleanliness(issues: Array<{ type: string; files: string[] 
   return lines.join("\n").trim();
 }
 
+// ── Exported core functions for unit testing ──────────────────────────
+
+export function detectConflicts(mcDir: string, instanceId: string): Array<{
+  id: string; name: string; patterns: string[]; severity: string;
+  matches: Array<{ file: string }>; solution: string; emoji: string;
+}> {
+  const modsDir = path.join(mcDir, "versions", instanceId, "mods");
+  if (!fs.existsSync(modsDir)) return [];
+  const files = fs.readdirSync(modsDir).filter((f: string) => f.endsWith(".jar"));
+  const findings: Array<{ id: string; name: string; patterns: string[]; severity: string; matches: Array<{ file: string }>; solution: string; emoji: string; }> = [];
+  for (const rule of CONFLICT_RULES) {
+    const regex = new RegExp(rule.patterns.join("|"), "i");
+    const matches = files.filter((f: string) => regex.test(f));
+    if (rule.patterns.length === 1 && matches.length > 1) {
+      findings.push({ ...rule, matches: matches.map((m: string) => ({ file: m })) });
+    } else if (rule.patterns.length > 1 && matches.length >= 2) {
+      findings.push({ ...rule, matches: matches.map((m: string) => ({ file: m })) });
+    }
+  }
+  return findings;
+}
+
+export function scanCleanliness(mcDir: string, instanceId: string): Array<{ type: string; files: string[] }> {
+  const modsDir = path.join(mcDir, "versions", instanceId, "mods");
+  if (!fs.existsSync(modsDir)) return [];
+  const files = fs.readdirSync(modsDir);
+  const issues: Array<{ type: string; files: string[] }> = [];
+  const nonJar = files.filter((f: string) => !f.endsWith(".jar") && !f.endsWith(".jar.lock") && !f.startsWith("."));
+  if (nonJar.length > 0) issues.push({ type: "非 JAR 文件", files: nonJar });
+  const srcJars = files.filter((f: string) => f.endsWith("-sources.jar"));
+  if (srcJars.length > 0) issues.push({ type: "Source JAR", files: srcJars });
+  const scripts = files.filter((f: string) => f.endsWith(".ps1") || f.endsWith(".bat") || f.endsWith(".cmd"));
+  if (scripts.length > 0) issues.push({ type: "脚本文件", files: scripts });
+  return issues;
+}
+
+export function parseJavaVersion(versionStr: string): { major: number; minor: number; build: number } | null {
+  const m = versionStr.match(/(\d+)\.(\d+)\.(\d+)/);
+  if (!m) return null;
+  const major = parseInt(m[1], 10);
+  const minor = parseInt(m[2], 10);
+  const build = parseInt(m[3], 10);
+  if (isNaN(major) || isNaN(minor) || isNaN(build)) return null;
+  return { major, minor, build };
+}
+
 function humanReadableJava(javaVersions: Array<{ id: string; path: string; java_version: string | null; major_version: number }>, mcVersion?: string): string {
   if (javaVersions.length === 0) return "❌ 未找到任何 Java 运行时。请安装 Java 或确认 PCL 已配置 Java。";
   const lines: string[] = [`检测到 ${javaVersions.length} 个 Java 版本：\n`];
@@ -77,7 +123,7 @@ function humanReadableJava(javaVersions: Array<{ id: string; path: string; java_
   return lines.join("\n").trim();
 }
 
-function resolveJavaForMC(mcVersion: string): { minJava: number; recommendedJava: number; notes: string } | null {
+export function resolveJavaForMC(mcVersion: string): { minJava: number; recommendedJava: number; notes: string } | null {
   const num = parseFloat(mcVersion.replace(/[^\d.]/g, "").slice(0, 4));
   if (isNaN(num)) return null;
   for (const entry of JAVA_VERSION_MAP) {
@@ -836,16 +882,16 @@ function detectPclConfig(mcDir: string): string | null {
   return null;
 }
 
-function parseMajorVersion(javaVersion: string): number {
+export function parseMajorVersion(javaVersion: string): number {
   const m = javaVersion.match(/(\d+)/);
   return m ? parseInt(m[1], 10) : 0;
 }
 
-function generateSummary(exceptionType: string, errorMsg: string, exitCode: string | null): string {
+export function generateSummary(exceptionType: string, errorMsg: string, exitCode: string | null): string {
   const lower = (exceptionType + " " + errorMsg).toLowerCase();
   if (exitCode === "1" && !exceptionType) return "退出码 1，无异常信息。通常由 Java 版本不匹配导致。";
   if (lower.includes("nosuchmethod")) return "NoSuchMethodError：模组与 MC 版本不兼容。";
-  if (lower.includes("noclassdeffound")) return "ClassNotFoundException：缺少依赖模组。";
+  if (lower.includes("noclassdeffound") || lower.includes("classnotfound")) return "ClassNotFoundException：缺少依赖模组。";
   if (lower.includes("outofmemory")) return "OutOfMemoryError：堆内存不足，请增加 -Xmx。";
   if (lower.includes("modloaderr")) return "ModLoadException：模组加载失败。";
   return `异常: ${exceptionType || "未知"}\n错误: ${errorMsg || "无"}`;

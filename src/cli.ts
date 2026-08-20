@@ -3,6 +3,21 @@ const path = require("node:path");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
 
+// ANSI color codes
+const C = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  cyan: "\x1b[36m",
+  blue: "\x1b[34m",
+  gray: "\x1b[90m",
+};
+const useColor = process.stdout.isTTY !== false;
+const colorize = (str, color) => useColor ? `${color}${str}${C.reset}` : str;
+
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
 function ask(question: string): Promise<string> {
@@ -10,13 +25,13 @@ function ask(question: string): Promise<string> {
 }
 
 function section(title) {
-  console.log(`\n${"═".repeat(50)}`);
-  console.log(`  ${title}`);
-  console.log("═".repeat(50));
+  console.log(`\n${colorize("═".repeat(50), C.cyan)}`);
+  console.log(`  ${colorize(title, C.bold)}`);
+  console.log(colorize("═".repeat(50), C.cyan));
 }
 
 function sub(title) {
-  console.log(`\n  ▸ ${title}`);
+  console.log(`\n  ▸ ${colorize(title, C.yellow)}`);
 }
 
 function exit(msg) {
@@ -65,16 +80,16 @@ async function runConflictCheck(mcDir, instanceId, rules) {
     }
   }
   if (findings.length === 0) {
-    console.log(`  ✅ 通过！共 ${files.length} 个模组，未发现已知冲突。`);
+    console.log(`  ${colorize("✅", C.green)} 通过！共 ${files.length} 个模组，未发现已知冲突。`);
   } else {
-    console.log(`  ⚠️  发现 ${findings.length} 个问题：\n`);
+    console.log(`  ${colorize("⚠️", C.yellow)} 发现 ${findings.length} 个问题：\n`);
     for (const f of findings) {
       const repls = (f.replacements ?? []).sort((a, b) => a.priority - b.priority);
-      console.log(`  ${f.emoji || "🔴"} [${f.name}]`);
-      console.log(`     文件：${f.matches.map((m) => m.replace(/\.jar$/i, "")).join("、")}`);
-      console.log(`     建议：${f.solution}`);
+      console.log(`  ${f.emoji || colorize("🔴", C.red)} ${colorize(`[${f.name}]`, C.bold)}`);
+      console.log(`     文件：${f.matches.map((m) => m.replace(/\.jar$/i, "")).join(colorize("、", C.yellow))}`);
+      console.log(`     建议：${colorize(f.solution, C.cyan)}`);
       if (repls.length > 0) {
-        console.log(`     💡 推荐替换方案：`);
+        console.log(`     ${colorize("💡 推荐替换方案：", C.blue)}`);
         for (const r of repls) {
           console.log(`       ${r.priority}. ${r.project_id} — ${r.note}（${r.loader}）`);
         }
@@ -107,9 +122,9 @@ async function runCleanlinessCheck(mcDir, instanceId) {
 async function runCrashCheck(mcDir) {
   sub("崩溃报告检查");
   const crashDir = path.join(mcDir, "crash-reports");
-  if (!fs.existsSync(crashDir)) { console.log("  ✅ 无崩溃报告，运行状态良好。"); return; }
+  if (!fs.existsSync(crashDir)) { console.log(`  ${colorize("✅", C.green)} 无崩溃报告，运行状态良好。`); return; }
   const files = fs.readdirSync(crashDir).filter((f) => f.endsWith(".txt")).sort((a, b) => b.localeCompare(a));
-  if (files.length === 0) { console.log("  ✅ crash-reports 目录为空。"); return; }
+  if (files.length === 0) { console.log(`  ${colorize("✅", C.green)} crash-reports 目录为空。`); return; }
   console.log(`  📋 共 ${files.length} 个崩溃报告（最新 3 个）：\n`);
   for (const f of files.slice(0, 3)) {
     const s = fs.statSync(path.join(crashDir, f));
@@ -214,9 +229,9 @@ async function main() {
   const rules = await loadRules();
   const mcDir = process.env.MC_DIR || detectMcDir();
 
-  console.log(`\n  ╔══════════════════════════════════════════════╗`);
-  console.log(`  ║     Minecraft Modpack Diagnostic Tool v1.2   ║`);
-  console.log(`  ╚══════════════════════════════════════════════╝`);
+  console.log(`\n  ${colorize("╔══════════════════════════════════════════════╗", C.cyan)}`);
+  console.log(`  ${colorize("║     Minecraft Modpack Diagnostic Tool v1.3   ║", C.cyan)}`);
+  console.log(`  ${colorize("╚══════════════════════════════════════════════╝", C.cyan)}`);
 
   if (!mcDir) {
     console.log(`\n  ❌ 未找到 .minecraft 目录`);

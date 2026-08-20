@@ -1,5 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.detectConflicts = detectConflicts;
+exports.scanCleanliness = scanCleanliness;
+exports.parseJavaVersion = parseJavaVersion;
+exports.resolveJavaForMC = resolveJavaForMC;
+exports.parseMajorVersion = parseMajorVersion;
+exports.generateSummary = generateSummary;
 const mcp_js_1 = require("@modelcontextprotocol/sdk/server/mcp.js");
 const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const zod_1 = require("zod");
@@ -57,6 +63,53 @@ function humanReadableCleanliness(issues, totalFiles) {
         lines.push("");
     }
     return lines.join("\n").trim();
+}
+// ── Exported core functions for unit testing ──────────────────────────
+function detectConflicts(mcDir, instanceId) {
+    const modsDir = path.join(mcDir, "versions", instanceId, "mods");
+    if (!fs.existsSync(modsDir))
+        return [];
+    const files = fs.readdirSync(modsDir).filter((f) => f.endsWith(".jar"));
+    const findings = [];
+    for (const rule of CONFLICT_RULES) {
+        const regex = new RegExp(rule.patterns.join("|"), "i");
+        const matches = files.filter((f) => regex.test(f));
+        if (rule.patterns.length === 1 && matches.length > 1) {
+            findings.push({ ...rule, matches: matches.map((m) => ({ file: m })) });
+        }
+        else if (rule.patterns.length > 1 && matches.length >= 2) {
+            findings.push({ ...rule, matches: matches.map((m) => ({ file: m })) });
+        }
+    }
+    return findings;
+}
+function scanCleanliness(mcDir, instanceId) {
+    const modsDir = path.join(mcDir, "versions", instanceId, "mods");
+    if (!fs.existsSync(modsDir))
+        return [];
+    const files = fs.readdirSync(modsDir);
+    const issues = [];
+    const nonJar = files.filter((f) => !f.endsWith(".jar") && !f.endsWith(".jar.lock") && !f.startsWith("."));
+    if (nonJar.length > 0)
+        issues.push({ type: "非 JAR 文件", files: nonJar });
+    const srcJars = files.filter((f) => f.endsWith("-sources.jar"));
+    if (srcJars.length > 0)
+        issues.push({ type: "Source JAR", files: srcJars });
+    const scripts = files.filter((f) => f.endsWith(".ps1") || f.endsWith(".bat") || f.endsWith(".cmd"));
+    if (scripts.length > 0)
+        issues.push({ type: "脚本文件", files: scripts });
+    return issues;
+}
+function parseJavaVersion(versionStr) {
+    const m = versionStr.match(/(\d+)\.(\d+)\.(\d+)/);
+    if (!m)
+        return null;
+    const major = parseInt(m[1], 10);
+    const minor = parseInt(m[2], 10);
+    const build = parseInt(m[3], 10);
+    if (isNaN(major) || isNaN(minor) || isNaN(build))
+        return null;
+    return { major, minor, build };
 }
 function humanReadableJava(javaVersions, mcVersion) {
     if (javaVersions.length === 0)
@@ -816,7 +869,7 @@ function generateSummary(exceptionType, errorMsg, exitCode) {
         return "退出码 1，无异常信息。通常由 Java 版本不匹配导致。";
     if (lower.includes("nosuchmethod"))
         return "NoSuchMethodError：模组与 MC 版本不兼容。";
-    if (lower.includes("noclassdeffound"))
+    if (lower.includes("noclassdeffound") || lower.includes("classnotfound"))
         return "ClassNotFoundException：缺少依赖模组。";
     if (lower.includes("outofmemory"))
         return "OutOfMemoryError：堆内存不足，请增加 -Xmx。";
