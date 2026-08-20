@@ -1,0 +1,108 @@
+{
+  "version": "1.1.0",
+  "lastUpdated": "2026-08-20",
+  "conflicts": [
+    {
+      "id": "renderer-sodium-embeddium",
+      "name": "渲染器冲突：Sodium 与 Embeddium",
+      "patterns": ["sodium", "embeddium"],
+      "severity": "error",
+      "solution": "Sodium 和 Embeddium 是同类渲染优化模组，不能同时安装。推荐保留 Embeddium（更现代，支持更多现代 MC 特性）。",
+      "emoji": "🔴"
+    },
+    {
+      "id": "renderer-iris-sodium",
+      "name": "光影冲突：Iris + Sodium",
+      "patterns": ["iris", "sodium"],
+      "severity": "warning",
+      "solution": "Iris 光影模组需要配合 Sodium 或 Embeddium 使用才能正常工作。两者都安装了没问题，但如果只用 Iris 不用 Sodium/Embeddium 则会导致光影无法加载。",
+      "emoji": "🟡"
+    },
+    {
+      "id": "ui-lib-duplicate",
+      "name": "UI Lib 重复安装",
+      "patterns": ["uilib", "ui_lib", "ui-lib", "interface", "inventorysorter"],
+      "severity": "error",
+      "solution": "UI Lib 存在多个版本会导致界面冲突崩溃。请只保留一个最新版本。",
+      "emoji": "🔴"
+    },
+    {
+      "id": "jei-duplicate",
+      "name": "JEI 重复安装",
+      "patterns": ["jei"],
+      "severity": "error",
+      "solution": "JEI（Just Enough Items）只能安装一个版本，多个版本会直接导致游戏无法启动。",
+      "emoji": "🔴"
+    },
+    {
+      "id": "fabric-api-duplicate",
+      "name": "Fabric API 重复安装",
+      "patterns": ["fabric-api"],
+      "severity": "error",
+      "solution": "Fabric API 是 Fabric 的核心依赖库，只能安装一个版本。多个版本会引发兼容性问题。",
+      "emoji": "🔴"
+    },
+    {
+      "id": "gravestone-duplicate",
+      "name": "墓碑模组重复",
+      "patterns": ["gravestone", "gravestones"],
+      "severity": "warning",
+      "solution": "墓碑模组建议只保留一个版本，多个版本可能导致实体 ID 冲突。",
+      "emoji": "🟡"
+    },
+    {
+      "id": "optifine-fabric-conflict",
+      "name": "OptiFine 与 Fabric 冲突",
+      "patterns": ["optifine"],
+      "severity": "error",
+      "solution": "OptiFine 仅支持原版 Minecraft 和 Forge。如果在 Fabric 整合包中使用 OptiFine，会与 Fabric API 产生严重冲突。建议使用 Sodium + Lithium + Starlight 替代 OptiFine 的优化功能。",
+      "emoji": "🔴"
+    },
+    {
+      "id": "cloth-config-duplicate",
+      "name": "Cloth Config 重复",
+      "patterns": ["cloth-config"],
+      "severity": "warning",
+      "solution": "Cloth Config API 用于管理模组设置界面，多个版本可能导致配置面板冲突。",
+      "emoji": "🟡"
+    },
+    {
+      "id": "architectury-api-duplicate",
+      "name": "Architectury API 重复",
+      "patterns": ["architectury"],
+      "severity": "warning",
+      "solution": "Architectury API 是跨平台模组开发框架，通常只需要一个版本。",
+      "emoji": "🟡"
+    }
+  ],
+  "javaVersionMap": [
+    { "mcFrom": "1.12.2", "mcTo": "1.16.5", "minJava": 8,  "recommendedJava": 8,  "notes": "Java 8 是此范围的标准选择" },
+    { "mcFrom": "1.17",   "mcTo": "1.17.1", "minJava": 16, "recommendedJava": 16, "notes": "Java 16 或 17，官方推荐使用 Java 17" },
+    { "mcFrom": "1.18.2", "mcTo": "1.19.4", "minJava": 17, "recommendedJava": 17, "notes": "必须使用 Java 17+" },
+    { "mcFrom": "1.20",   "mcTo": "1.20.4", "minJava": 17, "recommendedJava": 17, "notes": "Java 17 是标准选择" },
+    { "mcFrom": "1.20.5", "mcTo": "1.20.6", "minJava": 17, "recommendedJava": 21, "notes": "推荐 Java 21，部分模组可能要求 Java 21" },
+    { "mcFrom": "1.21",   "mcTo": null,     "minJava": 21, "recommendedJava": 21, "notes": "必须使用 Java 21+" }
+  ],
+  "cleanlinessRules": {
+    "forbiddenExtensions": [".ps1", ".bat", ".cmd", ".exe", ".dll"],
+    "sourceJarSuffix": "-sources.jar",
+    "devJarSuffix": "-dev.jar",
+    "readmeFiles": ["README.md", "README.txt", "readme.txt"],
+    "description": "mods/ 目录中不应包含非 JAR 文件（脚本、文档等）"
+  },
+  "crashAnalysisPatterns": [
+    { "keywords": ["nosuchmethoderror", "no such method"], "category": "version-mismatch", "solution": "NoSuchMethodError 通常表示模组编译目标版本与当前 Minecraft 版本不匹配。请更新该模组到兼容当前版本的最新构建。" },
+    { "keywords": ["noclassdeffounderror", "class not found"], "category": "missing-dependency", "solution": "ClassNotFoundException 表示缺少某个依赖模组。请检查 mod 元数据，安装缺失的依赖。" },
+    { "keywords": ["outofmemory", "java.lang.OutOfMemoryError", "heap space"], "category": "memory-issue", "solution": "堆内存不足。请在启动器中将最大堆内存（-Xmx）设置为至少 4GB，推荐 6-8GB（现代整合包）。" },
+    { "keywords": ["modloadexception", "mod loading"], "category": "mod-load-failed", "solution": "模组加载失败。查看堆栈中的模组名称，尝试禁用该模组或更新到最新版本。" },
+    { "keywords": ["illegalargumentexception", "illegal argument"], "category": "config-error", "solution": "参数错误，通常是某个模组的配置文件格式不正确。尝试删除对应 config 文件后重新生成。" },
+    { "keywords": ["nullpointerexception", "null pointer"], "category": "runtime-bug", "solution": "空指针异常通常是模组 bug。请向该模组作者提交 issue，并提供完整崩溃报告。" },
+    { "keywords": ["exceptionininitializererror", "static initializer"], "category": "mod-load-failed", "solution": "模组静态初始化失败，通常是模组初始化顺序冲突。尝试调整模组加载顺序或更新所有相关模组。" },
+    { "keywords": ["linkageerror", "class format error", "invalid class file"], "category": "corrupted-mod", "solution": "模组文件损坏或来自不兼容的编译环境。请重新下载该模组。" }
+  ],
+  "recommendations": {
+    "fabricOptimizationSuite": ["sodium", "lithium", "starlight", "flywheel"],
+    "fabricQualityOfLife": ["jei", "waystones", "controlling", "modmenu"],
+    "forgeOptimizationSuite": ["embeddium", "lithium", "phosphor", "rubidium"]
+  }
+}

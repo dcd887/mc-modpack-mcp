@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-20
+
+### Added
+- **External rules engine**: All conflict rules, Java version table, and crash analysis patterns moved to `src/rules.json` — users can now edit rules without touching code
+- **Human-readable output**: Every tool now returns friendly text with emojis and actionable tips, followed by `--- JSON ---` for programmatic parsing
+- **Error resolution tips**: Failed calls now include 💡 suggestions (e.g., "Please install PCL" or "Check your MC version format")
+- **CLI diagnostic tool**: New `npm run diagnose` command for interactive diagnosis without MCP — supports conflict check, cleanliness scan, crash analysis, and Java detection
+- **9 new conflict rules** in `rules.json`: OptiFine + Fabric, Cloth Config, Architectury API, plus expanded mod crash pattern recognition
+
+### Changed
+- `analyze_crash`: Now matches crash patterns from `rules.json` instead of hardcoded logic
+- `detect_conflicts`: Uses externalized `conflicts` array from `rules.json`
+- `get_version_info`: Shows recommended Java version based on MC version from `javaVersionMap`
+
 ## [1.0.2] - 2026-08-20
 
 ### Fixed

@@ -4,13 +4,16 @@ MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Supports 
 
 ## Features
 
-- **Java version detection** — reads PCL config to list all available Java runtimes
+- **Java version detection** — reads PCL config to list all available Java runtimes with version recommendations
 - **Version info** — parses instance JSON to extract Minecraft version, loader, Java requirements, JVM args
-- **Conflict detection** — finds known problematic mod combinations (renderers, UI libs, JEI, Fabric API)
+- **Conflict detection** — finds known problematic mod combinations from an external `rules.json` (easily extensible)
 - **Cleanliness scan** — detects non-JAR files, source jars, scripts in mods/ directory
 - **Log analysis** — reads latest.log with level filtering (INFO/WARN/ERROR) and keyword search
-- **Crash report analysis** — finds and parses crash-reports, extracts exception type and summary
+- **Crash report analysis** — finds crash reports, classifies errors, and suggests fixes automatically
 - **Dependency lookup** — queries Modrinth API for mod version and dependency info
+- **Human-readable output** — all tools return friendly text with emojis and 💡 tips, plus JSON below `--- JSON ---`
+- **CLI mode** — run `npm run diagnose` for an interactive terminal-based diagnosis (no MCP needed)
+- **External rules engine** — edit `src/rules.json` to add new conflicts, crash patterns, or Java version ranges without touching code
 
 ## Tools
 
@@ -186,6 +189,54 @@ Tests create backups before running and log results to `test_logs/`. See individ
 | `check_mod_dependencies` | ✅ | ✅ | ✅ |
 
 All tools accept `mc_dir` as an explicit path. `get_java_versions` auto-detects PCL on Windows; on other platforms it returns a clear message when PCL config is absent.
+
+## Using the Rules Engine
+
+All conflict rules, Java version mappings, and crash analysis patterns live in [src/rules.json](./src/rules.json). You can customize them without modifying source code:
+
+```json
+{
+  "conflicts": [
+    {
+      "id": "my-custom-conflict",
+      "name": "My Custom Conflict",
+      "patterns": ["mod-a", "mod-b"],
+      "severity": "error",
+      "solution": "Install only one of these mods.",
+      "emoji": "🔴"
+    }
+  ],
+  "javaVersionMap": [
+    { "mcFrom": "1.20.5", "mcTo": "1.20.6", "minJava": 17, "recommendedJava": 21, "notes": "..." }
+  ],
+  "crashAnalysisPatterns": [
+    { "keywords": ["my-error-pattern"], "category": "custom", "solution": "Do something about it." }
+  ]
+}
+```
+
+| Section | Purpose |
+|---------|---------|
+| `conflicts` | Mod conflict detection rules |
+| `javaVersionMap` | Minecraft → Java version compatibility |
+| `crashAnalysisPatterns` | Crash report classification and fix suggestions |
+
+## CLI Usage
+
+Run a quick interactive diagnosis without setting up MCP:
+
+```bash
+npm run diagnose
+# or
+MC_DIR=/path/to/.minecraft npm run diagnose
+```
+
+The CLI will:
+1. Auto-detect your Minecraft instance
+2. Check Java runtimes (PCL on Windows)
+3. Scan for mod conflicts
+4. Check directory cleanliness
+5. Review crash reports
 
 ## License
 
