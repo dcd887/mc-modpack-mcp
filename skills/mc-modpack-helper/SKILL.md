@@ -140,7 +140,22 @@ GET https://api.modrinth.com/v2/project/{projectId}/version?game_version={mc_ver
 4. 使用 mcdev-mcp 查询相关类是否存在于当前 MC 版本
 5. 使用 mcmodding-mcp 查询 Fabric/Forge 官方文档中的对应解决方案
 
-### Phase 8 — 生成报告
+### Phase 8 — AI 智能诊断（v1.3.0+）
+
+当用户描述模糊问题（如"游戏闪退了"、"加载很慢"）时，在基础诊断完成后调用 `ai_diagnose` 工具：
+1. 先运行基础诊断收集结构化数据（冲突、崩溃、日志摘要）
+2. 将数据传给 `ai_diagnose` 工具
+3. AI 生成自然语言报告，给出优先级排序的排查建议和优化方向
+4. 向用户解释 AI 建议并询问是否执行修复
+
+**前置条件：** 设置 `DASHSCOPE_API_KEY` 环境变量（获取地址：https://dashscope.console.aliyun.com/）
+
+**合规说明：**
+- 所有基础诊断工具完全不依赖网络，可离线运行
+- AI 诊断功能可选启用，`ai_diagnose` 未设置 API Key 时会给出清晰提示而非报错
+- Modrinth API 可通过 `DISABLE_MODRINTH=true` 完全关闭
+
+### Phase 9 — 生成报告
 
 输出结构化报告（见下方 Output 格式）
 

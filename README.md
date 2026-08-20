@@ -1,6 +1,6 @@
 # mc-modpack-mcp
 
-MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Supports Fabric/Forge mod conflict detection, log analysis, crash reports, and dependency lookup. `get_java_versions` requires PCL launcher on Windows; all other tools work cross-platform.
+MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Supports Fabric/Forge mod conflict detection, log analysis, crash reports, and AI-powered intelligent diagnosis. Core diagnostic engine is fully offline; optional AI analysis uses China-based DashScope (通义千问) API. `get_java_versions` requires PCL launcher on Windows; all other tools work cross-platform.
 
 ## Features
 
@@ -22,12 +22,14 @@ MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Supports 
 | `get_java_versions` | List all Java runtimes from PCL config |
 | `get_version_info` | Read instance metadata (version, loader, Java, JVM args, mod count) |
 | `list_mods` | Scan mods/ directory, optionally filter by regex |
-| `detect_conflicts` | Detect known mod conflicts (Sodium/Embeddium, Iris, UI Lib, JEI, Fabric API) |
+| `detect_conflicts` | Detect known mod conflicts with auto-replacement recommendations |
 | `scan_cleanliness` | Find non-JAR files, source jars, scripts in mods/ |
 | `read_log` | Read latest.log with level/keyword/tail filtering |
 | `find_crash_reports` | List all crash reports in crash-reports/ |
 | `analyze_crash` | Parse a crash report, extract exception type and summary |
 | `check_mod_dependencies` | Query Modrinth API for mod deps and compatibility |
+| `get_replacement_recommendations` | Get replacement mod suggestions for known conflicts |
+| `ai_diagnose` | 🤖 AI-powered full diagnostics report using 通义千问 (requires DASHSCOPE_API_KEY) |
 
 ## Installation
 
@@ -141,6 +143,11 @@ mc-modpack-mcp/
 ```
 
 The MCP uses the official `@modelcontextprotocol/sdk` v1.x with `McpServer` and `StdioServerTransport`. All tools use `server.tool()` registration pattern compatible with the MCP SDK specification.
+
+### AI Module (`src/ai.ts`)
+`ai_diagnose` 工具使用独立模块封装通义千问 API，提供：
+- `callQwen(prompt)` — 调用 Qwen 模型生成报告
+- `buildDiagnosePrompt(data)` — 构建诊断 prompt，整合所有结构化数据
 
 ## Skills
 

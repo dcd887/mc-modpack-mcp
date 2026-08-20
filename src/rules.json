@@ -123,5 +123,32 @@
     "fabricOptimizationSuite": ["sodium", "lithium", "starlight", "flywheel"],
     "fabricQualityOfLife": ["jei", "waystones", "controlling", "modmenu"],
     "forgeOptimizationSuite": ["embeddium", "lithium", "phosphor", "rubidium"]
+  },
+  "aiTips": {
+    "performance": [
+      "大量光影模组会导致帧率下降，建议关闭部分特效或使用 Sodium/Embeddium 优化渲染",
+      "Sodium 比 Embeddium 性能更好，推荐优先使用 Sodium",
+      "整合包超过 100 个模组建议分配 6GB+ 内存（-Xmx6G）"
+    ],
+    "memory": [
+      "整合包模组超过 100 个建议分配 4GB+ 内存",
+      "开启 ZGC 垃圾回收器可减少卡顿：添加 -XX:+UseZGC 到 JVM 参数",
+      "OutOfMemoryError 通常是 -Xmx 设置过小或存在内存泄漏模组导致"
+    ],
+    "loader": [
+      "Fabric 加载速度快，适合轻量整合包，模组生态快速增长",
+      "Forge 模组生态更丰富，适合大型剧情整合包",
+      "NeoForge 是 Forge 的现代分支，兼容大部分 Forge 模组"
+    ],
+    "conflicts": [
+      "Sodium 和 Embeddium 不能同时安装，选择其一即可",
+      "OptiFine 与 Fabric 完全互斥，Fabric 用户应使用 Sodium+Iris 替代",
+      "多个 UI Lib/JEI/Fabric API 版本会直接导致启动崩溃"
+    ],
+    "crashes": [
+      "NoSuchMethodError 99% 是模组与 MC 版本不匹配，更新模组即可解决",
+      "ClassNotFoundException 通常是缺少依赖模组，检查日志中的模组名称安装对应依赖",
+      "Exit Code 1 最常见原因是 Java 版本过高或过低，根据 MC 版本选择合适的 Java"
+    ]
   }
 }

@@ -5,7 +5,7 @@ const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const zod_1 = require("zod");
 const server = new mcp_js_1.McpServer({
     name: "mc-modpack-mcp",
-    version: "1.2.0",
+    version: "1.3.0",
 });
 const fs = require("node:fs");
 const path = require("node:path");
@@ -283,6 +283,158 @@ server.tool("detect_conflicts", "扫描 mods/ 目录中的已知冲突组合：�
                 text: readable + replLines.join("\n") + "\n\n--- JSON ---\n" + JSON.stringify({ instance: params.instance_id, total_mods: files.length, conflicts_found: withReplacements.length, findings: withReplacements }, null, 2)
             }]
     };
+});
+// ── Tool: ai_diagnose ────────────────────────────────────────────────
+server.tool("ai_diagnose", "使用 AI 全面分析整合包健康状态，生成自然语言诊断报告和优化建议。核心诊断完全基于本地规则引擎，不依赖网络。需要设置 DASHSCOPE_API_KEY 环境变量才能启用 AI 分析功能。", { mc_dir: Str, instance_id: Str }, async (params) => {
+    const apiKey = process.env.DASHSCOPE_API_KEY;
+    if (!apiKey) {
+        return {
+            content: [{
+                    type: "text",
+                    text: "❌ 未设置 DASHSCOPE_API_KEY\n\n💡 请获取通义千问 API Key 后设置环境变量：\n  Windows (PowerShell): `$env:DASHSCOPE_API_KEY='sk-xxx'`\n  macOS/Linux: `export DASHSCOPE_API_KEY='sk-xxx'`\n\n获取方式：https://dashscope.console.aliyun.com/\n\n--- JSON ---\n" + JSON.stringify({ mode: "no-api-key", instance: params.instance_id, suggestion: "请设置 DASHSCOPE_API_KEY 环境变量后重试" }, null, 2)
+                }]
+        };
+    }
+    try {
+        const aiModule = require("./ai");
+        const mcVersion = (params.mc_dir ? (() => {
+            const vj = path.join(params.mc_dir, "versions", params.instance_id, `${params.instance_id}.json`);
+            try {
+                return JSON.parse(fs.readFileSync(vj, "utf-8")).id;
+            }
+            catch {
+                return "unknown";
+            }
+        })() : "unknown");
+        const loader = (params.mc_dir ? (() => {
+            const vj = path.join(params.mc_dir, "versions", params.instance_id, `${params.instance_id}.json`);
+            try {
+                const j = JSON.parse(fs.readFileSync(vj, "utf-8"));
+                const modList = j.libraries ?? [];
+                return modList.some((lib) => typeof lib === "string" && lib.includes("fabric")) ? "fabric"
+                    : modList.some((lib) => typeof lib === "string" && lib.includes("forge")) ? "forge"
+                        : "unknown";
+            }
+            catch {
+                return "unknown";
+            }
+        })() : "unknown");
+        const modsDir = path.join(params.mc_dir ?? "", "versions", params.instance_id, "mods");
+        const modCount = fs.existsSync(modsDir) ? fs.readdirSync(modsDir).filter((f) => f.endsWith(".jar")).length : 0;
+        // Run conflict detection
+        const modsFiles = fs.existsSync(modsDir) ? fs.readdirSync(modsDir).filter((f) => f.endsWith(".jar")) : [];
+        const conflictsFound = [];
+        for (const rule of CONFLICT_RULES) {
+            const regex = new RegExp(rule.patterns.join("|"), "i");
+            const matches = modsFiles.filter((f) => regex.test(f));
+            if (rule.patterns.length === 1 && matches.length > 1) {
+                conflictsFound.push({ id: rule.id, name: rule.name, severity: rule.severity, matches: matches.map((m) => ({ file: m })) });
+            }
+            else if (rule.patterns.length > 1 && matches.length >= 2) {
+                conflictsFound.push({ id: rule.id, name: rule.name, severity: rule.severity, matches: matches.map((m) => ({ file: m })) });
+            }
+        }
+        // Scan cleanliness
+        const cleanIssues = [];
+        if (fs.existsSync(modsDir)) {
+            const allFiles = fs.readdirSync(modsDir);
+            const nonJar = allFiles.filter((f) => !f.endsWith(".jar") && !f.endsWith(".jar.lock") && !f.startsWith("."));
+            if (nonJar.length > 0)
+                cleanIssues.push({ type: "非 JAR 文件", files: nonJar });
+            const srcJars = allFiles.filter((f) => f.endsWith("-sources.jar"));
+            if (srcJars.length > 0)
+                cleanIssues.push({ type: "Source JAR", files: srcJars });
+            const scripts = allFiles.filter((f) => f.endsWith(".ps1") || f.endsWith(".bat") || f.endsWith(".cmd"));
+            if (scripts.length > 0)
+                cleanIssues.push({ type: "脚本文件", files: scripts });
+        }
+        // Find crash reports
+        const crashDir = path.join(params.mc_dir ?? "", "crash-reports");
+        const crashes = [];
+        if (fs.existsSync(crashDir)) {
+            const crashFiles = fs.readdirSync(crashDir).filter((f) => f.endsWith(".txt")).sort((a, b) => b.localeCompare(a));
+            for (const cf of crashFiles.slice(0, 3)) {
+                const content = fs.readFileSync(path.join(crashDir, cf), "utf-8");
+                const lines = content.split("\n");
+                const exMatch = content.match(/Exception of type\s+(\S+)\swas\s+thrown/);
+                const causedBy = content.match(/Caused by:\s*(.+)$/m);
+                let exceptionType = exMatch ? exMatch[1] : (causedBy ? causedBy[1].trim() : "");
+                let errorMsg = "";
+                for (const line of lines) {
+                    if (line.includes(": ") && /Exception|Error|error/.test(line)) {
+                        errorMsg = line.trim();
+                        break;
+                    }
+                }
+                crashes.push({ crash_file: cf, exception_type: exceptionType || "未知", error_message: errorMsg || "无" });
+            }
+        }
+        // Gather log summary
+        const logPath = path.join(params.mc_dir ?? "", "versions", params.instance_id, "logs", "latest.log");
+        let logSummary = "";
+        if (fs.existsSync(logPath)) {
+            let logLines = [];
+            try {
+                logLines = fs.readFileSync(logPath, "utf-8").split("\n");
+            }
+            catch {
+                logLines = fs.readFileSync(logPath, "latin1").split("\n");
+            }
+            const errors = logLines.filter((l) => /\bERROR\b/.test(l));
+            const warnings = logLines.filter((l) => /\bWARN\b/.test(l));
+            logSummary = `日志共 ${logLines.length} 行，ERROR: ${errors.length} 条，WARN: ${warnings.length} 条\n最新 ERROR：${errors.slice(-2).join(" | ") || "无"}`;
+        }
+        // Collect JVM args
+        const jvmArgs = [];
+        try {
+            const vj = path.join(params.mc_dir ?? "", "versions", params.instance_id, `${params.instance_id}.json`);
+            const versionData = JSON.parse(fs.readFileSync(vj, "utf-8"));
+            const argsObj = versionData.arguments ?? {};
+            if (Array.isArray(argsObj.jvm)) {
+                for (const item of argsObj.jvm) {
+                    if (typeof item === "string")
+                        jvmArgs.push(item);
+                }
+            }
+        }
+        catch { /* ignore */ }
+        const diagData = {
+            instanceId: params.instance_id,
+            minecraftVersion: mcVersion,
+            loader,
+            modCount,
+            javaVersion: "需通过 get_java_versions 工具获取",
+            jvmArgs,
+            conflicts: conflictsFound,
+            crashes,
+            cleanIssues,
+            logSummary,
+        };
+        const prompt = aiModule.buildDiagnosePrompt(diagData);
+        const aiReport = await aiModule.callQwen(prompt);
+        const readable = [
+            `🤖 AI 智能诊断报告`,
+            `  实例：${params.instance_id}（MC ${mcVersion}，${loader}）`,
+            `  模组数：${modCount}`,
+            `  冲突：${conflictsFound.length} 个 | 崩溃：${crashes.length} 个 | 异常文件：${cleanIssues.length} 类`,
+            ``,
+            aiReport,
+        ].join("\n");
+        return {
+            content: [{
+                    type: "text",
+                    text: readable + "\n\n--- JSON ---\n" + JSON.stringify({ mode: "ai", instance: params.instance_id, minecraft_version: mcVersion, loader, mod_count: modCount, conflicts_count: conflictsFound.length, crashes_count: crashes.length, clean_issues_count: cleanIssues.length, ai_report: aiReport, diagnostics: diagData }, null, 2)
+                }]
+        };
+    }
+    catch (e) {
+        return {
+            content: [{
+                    type: "text",
+                    text: `❌ AI 诊断失败：${e instanceof Error ? e.message : String(e)}\n\n💡 常见原因：\n  - DASHSCOPE_API_KEY 未设置或无效\n  - 网络连接问题（DashScope API 在国内）\n  - 请检查环境变量和网络连接`
+                }]
+        };
+    }
 });
 // ── Tool: get_replacement_recommendations ────────────────────────────
 server.tool("get_replacement_recommendations", "根据冲突规则 ID 或模组关键词，通过 Modrinth API 查询推荐的替代模组，返回名称、项目 ID、加载器支持、兼容版本和下载量。", { conflict_id: zod_1.z.string().optional(), keyword: zod_1.z.string().optional(), mc_version: OptStr, loader: zod_1.z.enum(["fabric", "forge", "neoforge"]).optional() }, async (params) => {

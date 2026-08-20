@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const readline = require("node:readline");
+const { spawn } = require("node:child_process");
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -139,6 +140,7 @@ async function runCrashCheck(mcDir) {
       else if (lower.includes("nosuchmethod")) console.log(`  🔍 建议：模组与 MC 版本不兼容，请更新模组。`);
       else if (lower.includes("noclassdeffound")) console.log(`  🔍 建议：缺少依赖模组，请安装缺失的依赖。`);
       else console.log(`  🔍 建议：查看详细日志或向模组作者提交 issue。`);
+      console.log("\n" + content.slice(0, 2000));
     }
   }
 }
@@ -167,12 +169,53 @@ async function runJavaCheck(mcDir) {
   }
 }
 
+async function runAIDiagnose(mcDir, instanceId, _rules) {
+  if (!process.env.DASHSCOPE_API_KEY) {
+    console.log("\n  ⚠️  未设置 DASHSCOPE_API_KEY，跳过 AI 诊断");
+    console.log("  💡 请获取 API Key 后设置：export DASHSCOPE_API_KEY='sk-xxx'");
+    return;
+  }
+  console.log("\n  🤖 AI 智能诊断中...（可能需要 10-30 秒）");
+  try {
+    const process2 = spawn("node", [path.join(__dirname, "index.js"), "--mc-dir", mcDir, "--instance-id", instanceId], {
+      env: { ...process.env, MCP_SERVER_DEBUG: "false" },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    let output = "";
+    const sendToolCall = (data) => JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: data }) + "\n";
+    process2.stdin.write(sendToolCall({ name: "ai_diagnose", arguments: { mc_dir: mcDir, instance_id: instanceId } }));
+    const deadline = Date.now() + 60_000;
+    for await (const chunk of process2.stdout) {
+      for (const line of String(chunk).split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.result?.content?.[0]?.type === "text") {
+            const text = parsed.result.content[0].text;
+            const sepIndex = text.indexOf("\n\n--- JSON ---\n");
+            if (sepIndex !== -1) {
+              console.log(text.slice(0, sepIndex));
+            } else {
+              console.log(text);
+            }
+          }
+        } catch {}
+      }
+      if (Date.now() > deadline) break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    process2.kill();
+  } catch (e) {
+    console.log(`  ❌ AI 诊断失败：${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
 async function main() {
   const rules = await loadRules();
   const mcDir = process.env.MC_DIR || detectMcDir();
 
   console.log(`\n  ╔══════════════════════════════════════════════╗`);
-  console.log(`  ║     Minecraft Modpack Diagnostic Tool v1.1   ║`);
+  console.log(`  ║     Minecraft Modpack Diagnostic Tool v1.2   ║`);
   console.log(`  ╚══════════════════════════════════════════════╝`);
 
   if (!mcDir) {
@@ -206,6 +249,12 @@ async function main() {
   await runConflictCheck(mcDir, instanceId, rules);
   await runCleanlinessCheck(mcDir, instanceId);
   await runCrashCheck(mcDir);
+
+  const aiChoice = await ask(`\n  🤖 是否运行 AI 智能诊断？(y/N) `);
+  if (aiChoice.trim().toLowerCase() === "y") {
+    section("AI 智能诊断");
+    await runAIDiagnose(mcDir, instanceId, rules);
+  }
 
   section("诊断完成");
   console.log(`  📋 实例：${instanceId}`);
