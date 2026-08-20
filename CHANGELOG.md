@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-20
+
+### Added
+- **New tool: `get_replacement_recommendations`** — queries Modrinth API to return recommended alternative mods for conflicting ones, with real download counts and version compatibility
+- **Auto-injected recommendations in `detect_conflicts`** — conflict results now include 📦 replacement suggestions fetched live from Modrinth
+- **Externalized replacement data in `src/rules.json`** — each conflict rule can have a `replacements` array with project_id, priority, loader, and note
+
+### Changed
+- Updated all Modrinth project IDs to real values (Embeddium: `sk9rgfiA`, Sodium: `AANobbMI`, Starlight: `H8CaAYZC`, Flywheel: `5lpsZoRi`)
+- Build script now auto-copies `rules.json` to `dist/`
+
 ## [1.1.0] - 2026-08-20
 
 ### Added

@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "lastUpdated": "2026-08-20",
   "conflicts": [
     {
@@ -8,7 +8,11 @@
       "patterns": ["sodium", "embeddium"],
       "severity": "error",
       "solution": "Sodium 和 Embeddium 是同类渲染优化模组，不能同时安装。推荐保留 Embeddium（更现代，支持更多现代 MC 特性）。",
-      "emoji": "🔴"
+      "emoji": "🔴",
+      "replacements": [
+        { "project_id": "sk9rgfiA", "priority": 1, "loader": "fabric", "note": "当前主流渲染器，性能优秀，Embeddium 是 Sodium 的现代替代" },
+        { "project_id": "AANobbMI", "priority": 2, "loader": "fabric", "note": "Sodium 经典渲染器，性能极强" }
+      ]
     },
     {
       "id": "renderer-iris-sodium",
@@ -16,7 +20,10 @@
       "patterns": ["iris", "sodium"],
       "severity": "warning",
       "solution": "Iris 光影模组需要配合 Sodium 或 Embeddium 使用才能正常工作。两者都安装了没问题，但如果只用 Iris 不用 Sodium/Embeddium 则会导致光影无法加载。",
-      "emoji": "🟡"
+      "emoji": "🟡",
+      "replacements": [
+        { "project_id": "sk9rgfiA", "priority": 1, "loader": "fabric", "note": "搭配 Iris 使用的推荐渲染器" }
+      ]
     },
     {
       "id": "ui-lib-duplicate",
@@ -24,7 +31,8 @@
       "patterns": ["uilib", "ui_lib", "ui-lib", "interface", "inventorysorter"],
       "severity": "error",
       "solution": "UI Lib 存在多个版本会导致界面冲突崩溃。请只保留一个最新版本。",
-      "emoji": "🔴"
+      "emoji": "🔴",
+      "replacements": []
     },
     {
       "id": "jei-duplicate",
@@ -32,7 +40,8 @@
       "patterns": ["jei"],
       "severity": "error",
       "solution": "JEI（Just Enough Items）只能安装一个版本，多个版本会直接导致游戏无法启动。",
-      "emoji": "🔴"
+      "emoji": "🔴",
+      "replacements": []
     },
     {
       "id": "fabric-api-duplicate",
@@ -40,7 +49,8 @@
       "patterns": ["fabric-api"],
       "severity": "error",
       "solution": "Fabric API 是 Fabric 的核心依赖库，只能安装一个版本。多个版本会引发兼容性问题。",
-      "emoji": "🔴"
+      "emoji": "🔴",
+      "replacements": []
     },
     {
       "id": "gravestone-duplicate",
@@ -48,15 +58,22 @@
       "patterns": ["gravestone", "gravestones"],
       "severity": "warning",
       "solution": "墓碑模组建议只保留一个版本，多个版本可能导致实体 ID 冲突。",
-      "emoji": "🟡"
+      "emoji": "🟡",
+      "replacements": []
     },
     {
       "id": "optifine-fabric-conflict",
       "name": "OptiFine 与 Fabric 冲突",
       "patterns": ["optifine"],
       "severity": "error",
-      "solution": "OptiFine 仅支持原版 Minecraft 和 Forge。如果在 Fabric 整合包中使用 OptiFine，会与 Fabric API 产生严重冲突。建议使用 Sodium + Lithium + Starlight 替代 OptiFine 的优化功能。",
-      "emoji": "🔴"
+      "solution": "OptiFine 仅支持原版 Minecraft 和 Forge。如果在 Fabric 整合包中使用 OptiFine，会与 Fabric API 产生严重冲突。建议使用现代替代方案。",
+      "emoji": "🔴",
+      "replacements": [
+        { "project_id": "sk9rgfiA", "priority": 1, "loader": "fabric", "note": "Fabric 优化首选渲染器（Embeddium）" },
+        { "project_id": "AANobbMI", "priority": 2, "loader": "fabric", "note": "Sodium 经典渲染器，性能极强" },
+        { "project_id": "H8CaAYZC", "priority": 3, "loader": "fabric", "note": "Starlight 光照引擎，大幅提升 FPS" },
+        { "project_id": "5lpsZoRi", "priority": 4, "loader": "fabric", "note": "Flywheel 动画性能优化" }
+      ]
     },
     {
       "id": "cloth-config-duplicate",
@@ -64,7 +81,8 @@
       "patterns": ["cloth-config"],
       "severity": "warning",
       "solution": "Cloth Config API 用于管理模组设置界面，多个版本可能导致配置面板冲突。",
-      "emoji": "🟡"
+      "emoji": "🟡",
+      "replacements": []
     },
     {
       "id": "architectury-api-duplicate",
@@ -72,7 +90,8 @@
       "patterns": ["architectury"],
       "severity": "warning",
       "solution": "Architectury API 是跨平台模组开发框架，通常只需要一个版本。",
-      "emoji": "🟡"
+      "emoji": "🟡",
+      "replacements": []
     }
   ],
   "javaVersionMap": [

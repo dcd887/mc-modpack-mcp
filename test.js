@@ -170,6 +170,22 @@ async function runTest(id, method, params, description) {
       "查询 Sodium 依赖信息（Modrinth API）"
     );
 
+    // Test 10: get_replacement_recommendations (by conflict_id)
+    await runTest(
+      10,
+      "tools/call",
+      { name: "get_replacement_recommendations", arguments: { conflict_id: "optifine-fabric-conflict", mc_version: "1.20.1", loader: "fabric" } },
+      "查询 OptiFine 冲突的替换推荐"
+    );
+
+    // Test 11: get_replacement_recommendations (by keyword)
+    await runTest(
+      11,
+      "tools/call",
+      { name: "get_replacement_recommendations", arguments: { keyword: "iris", mc_version: "1.20.1", loader: "fabric" } },
+      "通过关键词 iris 查询相关替换方案"
+    );
+
     log("\n=== 所有测试完成 ===");
     log(`完整输出已保存到: ${LOG_FILE}`);
     proc.kill();

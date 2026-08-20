@@ -68,9 +68,17 @@ async function runConflictCheck(mcDir, instanceId, rules) {
   } else {
     console.log(`  ⚠️  发现 ${findings.length} 个问题：\n`);
     for (const f of findings) {
+      const repls = (f.replacements ?? []).sort((a, b) => a.priority - b.priority);
       console.log(`  ${f.emoji || "🔴"} [${f.name}]`);
       console.log(`     文件：${f.matches.map((m) => m.replace(/\.jar$/i, "")).join("、")}`);
-      console.log(`     建议：${f.solution}\n`);
+      console.log(`     建议：${f.solution}`);
+      if (repls.length > 0) {
+        console.log(`     💡 推荐替换方案：`);
+        for (const r of repls) {
+          console.log(`       ${r.priority}. ${r.project_id} — ${r.note}（${r.loader}）`);
+        }
+      }
+      console.log("");
     }
   }
 }

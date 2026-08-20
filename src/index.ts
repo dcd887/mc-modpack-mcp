@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const server = new McpServer({
   name: "mc-modpack-mcp",
-  version: "1.1.0",
+  version: "1.2.0",
 });
 
 const fs = require("node:fs");
@@ -247,15 +247,15 @@ server.tool(
 
 server.tool(
   "detect_conflicts",
-  "扫描 mods/ 目录中的已知冲突组合：渲染器冲突（sodium+embeddium+iris）、UI Lib 重复、JEI 重复、Fabric API 重复等。",
+  "扫描 mods/ 目录中的已知冲突组合：渲染器冲突（sodium+embeddium+iris）、UI Lib 重复、JEI 重复、Fabric API 重复等。自动附带替换推荐。",
   { mc_dir: Str, instance_id: Str },
-  (params) => {
+  async (params) => {
     const modsDir = path.join(params.mc_dir, "versions", params.instance_id, "mods");
     if (!fs.existsSync(modsDir)) {
       return { content: [{ type: "text", text: `❌ mods 目录不存在：${modsDir}` }] };
     }
     const files = fs.readdirSync(modsDir).filter((f: string) => f.endsWith(".jar"));
-    const findings: Array<{ id: string; name: string; severity: string; matches: Array<{ file: string }>; solution: string; emoji: string }> = [];
+    const findings: Array<{ id: string; name: string; severity: string; matches: Array<{ file: string }>; solution: string; emoji: string; replacements?: Array<{ project_id: string; priority: number; loader: string; note: string }> }> = [];
     for (const rule of CONFLICT_RULES) {
       const regex = new RegExp(rule.patterns.join("|"), "i");
       const matches = files.filter((f: string) => regex.test(f));
@@ -265,11 +265,125 @@ server.tool(
         findings.push({ ...rule, matches: matches.map((m: string) => ({ file: m })) });
       }
     }
-    const readable = humanReadableConflicts(findings.map((f) => ({ pattern: f.id, name: f.name, severity: f.severity, matches: f.matches, solution: f.solution })), files.length);
+    const withReplacements = await Promise.all(findings.map(async (f) => {
+      const replacements = (f.replacements ?? []) as Array<{ project_id: string; priority: number; loader: string; note: string }>;
+      if (replacements.length === 0) return { ...f, replacement_details: [] };
+      const details: Array<{ project_id: string; title?: string; priority: number; loader: string; note: string }> = [];
+      for (const rep of replacements.sort((a, b) => a.priority - b.priority)) {
+        try {
+          const resp = await fetch(`https://api.modrinth.com/v2/project/${rep.project_id}`);
+          if (resp.ok) {
+            const proj: any = await resp.json();
+            details.push({ project_id: rep.project_id, title: proj.title, priority: rep.priority, loader: rep.loader, note: rep.note });
+          } else {
+            details.push({ project_id: rep.project_id, priority: rep.priority, loader: rep.loader, note: rep.note });
+          }
+        } catch {
+          details.push({ project_id: rep.project_id, priority: rep.priority, loader: rep.loader, note: rep.note });
+        }
+      }
+      return { ...f, replacement_details: details };
+    }));
+    const readable = humanReadableConflicts(withReplacements.map((f) => ({ pattern: f.id, name: f.name, severity: f.severity, matches: f.matches, solution: f.solution })), files.length);
+    const replLines: string[] = [];
+    for (const f of withReplacements) {
+      if ((f as any).replacement_details?.length > 0) {
+        replLines.push(`\n💡 [${f.name}] 推荐替换方案：`);
+        for (const r of (f as any).replacement_details) {
+          const title = r.title ?? r.project_id;
+          replLines.push(`  ${r.priority}. ${title} — ${r.note}（${r.loader}）`);
+        }
+      }
+    }
     return {
       content: [{
         type: "text",
-        text: readable + "\n\n--- JSON ---\n" + JSON.stringify({ instance: params.instance_id, total_mods: files.length, conflicts_found: findings.length, findings }, null, 2)
+        text: readable + replLines.join("\n") + "\n\n--- JSON ---\n" + JSON.stringify({ instance: params.instance_id, total_mods: files.length, conflicts_found: withReplacements.length, findings: withReplacements }, null, 2)
+      }]
+    };
+  }
+);
+
+// ── Tool: get_replacement_recommendations ────────────────────────────
+
+server.tool(
+  "get_replacement_recommendations",
+  "根据冲突规则 ID 或模组关键词，通过 Modrinth API 查询推荐的替代模组，返回名称、项目 ID、加载器支持、兼容版本和下载量。",
+  { conflict_id: z.string().optional(), keyword: z.string().optional(), mc_version: OptStr, loader: z.enum(["fabric", "forge", "neoforge"]).optional() },
+  async (params) => {
+    const conflictRules = (rules as any).conflicts ?? [];
+    const sourceRule = params.conflict_id
+      ? conflictRules.find((r: any) => r.id === params.conflict_id)
+      : null;
+    const replCandidates = params.conflict_id
+      ? (sourceRule?.replacements ?? [])
+      : [];
+    const kwLower = (params.keyword ?? "").toLowerCase();
+    if (replCandidates.length === 0 && (!params.conflict_id && !params.keyword)) {
+      return { content: [{ type: "text", text: "❌ 请提供 conflict_id 或 keyword 参数。\n💡 conflict_id 示例：renderer-sodium-embeddium、optifine-fabric-conflict\n💡 也可传入 keyword=sodium 搜索相关替换方案。" }] };
+    }
+    if (replCandidates.length === 0 && kwLower) {
+      const matchedRules = conflictRules.filter((r: any) => r.patterns.some((p: string) => p.toLowerCase().includes(kwLower)));
+      if (matchedRules.length === 0) {
+        return { content: [{ type: "text", text: `未找到与 "${params.keyword}" 相关的冲突规则。\n💡 可用 detect_conflicts 先检测冲突，再根据 conflict_id 查询推荐。` }] };
+      }
+      for (const r of matchedRules) {
+        if (r.replacements && r.replacements.length > 0) { replCandidates.push(...r.replacements); break; }
+      }
+    }
+    const seen = new Set<string>();
+    const uniqueCandidates = replCandidates.filter((c: any) => {
+      if (seen.has(c.project_id)) return false;
+      seen.add(c.project_id);
+      return true;
+    });
+    if (uniqueCandidates.length === 0) {
+      return { content: [{ type: "text", text: "未配置替换建议。可在 rules.json 中为冲突规则添加 replacements 字段。" }] };
+    }
+    const loader = params.loader ?? "fabric";
+    const results: Array<{ project_id: string; title: string; priority: number; loader: string; note: string; versions: string[]; downloads: number }> = [];
+    await Promise.all(uniqueCandidates.map(async (rep: any) => {
+      try {
+        const [projResp, verResp] = await Promise.all([
+          fetch(`https://api.modrinth.com/v2/project/${rep.project_id}`),
+          fetch(`https://api.modrinth.com/v2/project/${rep.project_id}/version?game_version=${params.mc_version ?? ""}&loader=${loader}&status=released&limit=5`),
+        ]);
+        const proj: any = projResp.ok ? await projResp.json() : null;
+        const versions: any[] = verResp.ok ? await verResp.json() : [];
+        const matching = versions.find((v: any) => {
+          const loaders = v.loaders ?? [];
+          const gameVersions = v.game_versions ?? [];
+          return loaders.includes(loader) && (!params.mc_version || gameVersions.includes(params.mc_version));
+        });
+        const latest = matching ?? versions[0] ?? {};
+        results.push({
+          project_id: rep.project_id,
+          title: proj?.title ?? rep.project_id,
+          priority: rep.priority,
+          loader,
+          note: rep.note,
+          versions: latest.game_versions ?? [],
+          downloads: proj?.downloads ?? 0,
+        });
+      } catch {
+        results.push({ project_id: rep.project_id, title: rep.project_id, priority: rep.priority, loader, note: rep.note, versions: [], downloads: 0 });
+      }
+    }));
+    results.sort((a, b) => a.priority - b.priority || b.downloads - a.downloads);
+    if (results.length === 0) {
+      return { content: [{ type: "text", text: `未能获取替换建议。请检查网络连接，确认 Modrinth API 可访问。` }] };
+    }
+    const header = `📦 替换推荐${params.mc_version ? `（MC ${params.mc_version}，${loader}）` : ""}：\n`;
+    const list = results.map((r) => {
+      const compat = r.versions.length > 0 ? r.versions.join(", ") : "待验证";
+      return `  ${r.priority}. ${r.title}\n     📋 ${r.note}（${r.loader}，下载量 ${(r.downloads / 1000).toFixed(1)}k）\n     兼容：${compat}`;
+    }).join("\n\n");
+    const summary = `共 ${results.length} 个推荐方案`;
+    const readable = header + list + `\n\n💡 可在 https://modrinth.com 上搜索对应项目 ID 下载。`;
+    return {
+      content: [{
+        type: "text",
+        text: readable + "\n\n--- JSON ---\n" + JSON.stringify({ total: results.length, loader, mc_version: params.mc_version, recommendations: results }, null, 2)
       }]
     };
   }
