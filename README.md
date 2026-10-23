@@ -1,5 +1,7 @@
 # mc-modpack-mcp
 
+[![M8ven Verified](https://m8ven.ai/badge/mcp/dcd887/mc-modpack-mcp?variant=verified)](https://m8ven.ai/mcp/dcd887/mc-modpack-mcp?s=readme)
+
 MCP (Model Context Protocol) server for Minecraft modpack diagnostics. Supports Fabric/Forge mod conflict detection, log analysis, crash reports, and AI-powered intelligent diagnosis. Core diagnostic engine is fully offline; optional AI analysis uses China-based DashScope (通义千问) API. `get_java_versions` requires PCL launcher on Windows; all other tools work cross-platform.
 
 ## Features
